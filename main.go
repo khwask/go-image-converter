@@ -30,16 +30,17 @@ func main() {
 	dir := flag.Arg(0)
 
 	// jpgファイルをimgディレクトリからさがす
-	// TODO: 無名関数のerrを処理する
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if filepath.Ext(path) == srcFmt {
-			fmt.Println(path)
-			imgconv.Convert(path, dstFmt)
+			err := imgconv.Convert(path, dstFmt)
+			if err != nil {
+				fmt.Printf("convertion error. file : %s, err : %s\n", path, err)
+			}
 		}
 		return nil
 	})
 
 	if err != nil {
-		// TODO: エラー処理
+		os.Exit(1)
 	}
 }

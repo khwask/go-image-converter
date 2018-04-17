@@ -1,12 +1,19 @@
 package imgconv
 
 import (
+	"errors"
+	"image"
 	"image/jpeg"
 	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+/*
+Image タイプ
+*/
+type Image image.Image
 
 /*
 Convert ファイル形式をJPGからPNGに変換する
@@ -20,9 +27,16 @@ func Convert(srcfilename string, dstformat string) error {
 	}
 	defer file.Close()
 
-	// JPEG前提でdecode
-	// TODO: ファイル拡張子なんでもうけれるようにしたい
-	img, err := jpeg.Decode(file)
+	// Imageをdecode
+	var img Image
+	switch filepath.Ext(srcfilename) {
+	case ".jpg", ".jpeg":
+		img, err = jpeg.Decode(file)
+	case ".png":
+		img, err = png.Decode(file)
+	default:
+		return errors.New("Unsupported file decode format")
+	}
 	if err != nil {
 		return err
 	}
@@ -35,8 +49,15 @@ func Convert(srcfilename string, dstformat string) error {
 	defer out.Close()
 
 	// PNG形式でencodeして出力
-	// TODO: ファイル拡張子なんでもうけれるようにしたい
-	err = png.Encode(out, img)
+	switch dstformat {
+	case ".jpg", ".jpeg":
+		option := &jpeg.Options{Quality: 100}
+		err = jpeg.Encode(out, img, option)
+	case ".png":
+		err = png.Encode(out, img)
+	default:
+		return errors.New("Unsupported file encode format")
+	}
 	if err != nil {
 		return err
 	}
