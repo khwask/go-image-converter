@@ -11,44 +11,43 @@ import (
 )
 
 /*
-Image タイプ
+ImageFile は、ファイルパスを持つユーザ定義型
 */
-type Image image.Image
+type ImageFile struct {
+	Path string
+}
+
+// 拡張子を指定のものに変えたファイル名を返す
+func (file *ImageFile) changeExt(ext string) string {
+	return strings.Replace(file.Path, filepath.Ext(file.Path), ext, 1)
+}
 
 /*
-Convert ファイル形式をJPGからPNGに変換する
+Convert ファイル形式を指定のものに変換する
 */
-func Convert(srcfilename string, dstformat string) error {
+func Convert(file *ImageFile, dstformat string) error {
 
 	// ファイルオープン
-	file, err := os.Open(srcfilename)
+	f, err := os.Open(file.Path)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer f.Close()
 
 	// Imageをdecode
-	var img Image
-	switch filepath.Ext(srcfilename) {
-	case ".jpg", ".jpeg":
-		img, err = jpeg.Decode(file)
-	case ".png":
-		img, err = png.Decode(file)
-	default:
-		return errors.New("Unsupported file decode format")
-	}
+	img, _, err := image.Decode(f)
 	if err != nil {
 		return err
 	}
 
 	// 出力ファイル作成
-	out, err := os.Create(setfilename(srcfilename, dstformat))
+	out, err := os.Create(file.changeExt(dstformat))
 	if err != nil {
 		return err
 	}
 	defer out.Close()
 
-	// PNG形式でencodeして出力
+	// encodeして出力
 	switch dstformat {
 	case ".jpg", ".jpeg":
 		option := &jpeg.Options{Quality: 100}
@@ -63,9 +62,4 @@ func Convert(srcfilename string, dstformat string) error {
 	}
 
 	return nil
-}
-
-// 指定の拡張子のファイル名を作る
-func setfilename(srcfilename string, extention string) string {
-	return strings.Replace(srcfilename, filepath.Ext(srcfilename), extention, 1)
 }
